@@ -8,14 +8,14 @@ GOSS_CONTAINER := security-master-0
 
 install:
 	# This starts a command in the background to install the license once the cluster has formed
-	until kubectl exec -ti $$(kubectl get pods -l release=$(RELEASE) -o name | awk -F'/' '{ print $$NF }' | shuf -n 1) -- curl --fail -k -XPUT 'https://localhost:9200/_xpack/license' -H "Content-Type: application/json" -d @/usr/share/elasticsearch/config/license/license.json > /dev/null 2>&1 ; do sleep 5; done & \
+	until kubectl exec -ti $(GOSS_CONTAINER) -- curl --fail -k -XPUT 'https://$${discovery.zen.ping.unicast.hosts}:9200/_xpack/license' -H "Content-Type: application/json" -d @/usr/share/elasticsearch/config/license/license.json > /dev/null 2>&1 ; do sleep 5; done & \
 	helm upgrade --wait --timeout=600 --install --values ./security.yml $(RELEASE) ../../ ; \
 	
 purge:
 	helm del --purge $(RELEASE)
 
 license:
-	kubectl exec -ti $$(kubectl get pods -l release=$(RELEASE) -o name | awk -F'/' '{ print $$NF }' | shuf -n 1) -- curl --fail -k -XPUT 'https://localhost:9200/_xpack/license' -H "Content-Type: application/json" -d @/usr/share/elasticsearch/config/license/license.json
+	kubectl exec -ti $(GOSS_CONTAINER) -- curl --fail -k -XPUT 'https://$${discovery.zen.ping.unicast.hosts}:9200/_xpack/license' -H "Content-Type: application/json" -d @/usr/share/elasticsearch/config/license/license.json
 	
 test: secrets install goss
 
